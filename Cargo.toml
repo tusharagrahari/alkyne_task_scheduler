@@ -1,0 +1,42 @@
+[package]
+name = "alkyne"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+description = "Task management API with email 2FA login, role-based access and per-user caching"
+license = "MIT"
+publish = false
+
+[dependencies]
+actix-web = "4.15"
+argon2 = "0.6"
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+dotenvy = "0.15"
+jsonwebtoken = { version = "11", default-features = false, features = ["rust_crypto"] }
+rand = "0.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.8", default-features = false, features = [
+    "runtime-tokio",
+    "tls-rustls",
+    "postgres",
+    "uuid",
+    "chrono",
+    "migrate",
+    "macros",
+] }
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+
+[dev-dependencies]
+# The request type that `actix_web::test::init_service` is generic over
+# (`actix_http::Request`) is not re-exported by actix-web, so the test harness
+# names it directly.
+actix-http = "3"
+actix-rt = "2"
+
+[profile.release]
+codegen-units = 1
+strip = true
