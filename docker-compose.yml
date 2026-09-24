@@ -1,0 +1,46 @@
+# Local development stack.
+#
+#   docker compose up --build        # database + API on http://localhost:8080
+#   docker compose up -d db          # database only, then `cargo run` on the host
+#
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: alkyne
+      POSTGRES_PASSWORD: alkyne
+      POSTGRES_DB: alkyne
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # `pg_isready` flips green slightly before the server accepts application
+      # connections, so the API also retries on start-up. Belt and braces.
+      test: ["CMD-SHELL", "pg_isready -U alkyne -d alkyne"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgres://alkyne:alkyne@db:5432/alkyne
+      BIND_ADDRESS: 0.0.0.0:8080
+      # Local-only secret. Generate a real one for anything else:
+      #   openssl rand -hex 32
+      JWT_SECRET: local-development-only-secret-change-me
+      JWT_TTL_SECONDS: "3600"
+      TWO_FACTOR_CODE_TTL_SECONDS: "300"
+      TWO_FACTOR_MAX_ATTEMPTS: "5"
+      CACHE_TTL_SECONDS: "300"
+      ENABLE_DEV_ENDPOINTS: "true"
+      RUST_LOG: info,sqlx::query=warn
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
