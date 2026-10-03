@@ -15,6 +15,7 @@ described in [Validation workflow](#validation-workflow).
 
 - [Stack](#stack)
 - [Quick start](#quick-start)
+- [Frontend](#frontend)
 - [Configuration](#configuration)
 - [Migrations](#migrations)
 - [Validation workflow](#validation-workflow)
@@ -78,6 +79,38 @@ noticeably slower.
 ```bash
 docker compose down -v           # -v also removes the database volume
 ```
+
+---
+
+## Frontend
+
+A Next.js (App Router, TypeScript) client in [`frontend/`](frontend/). It requires the API running on `localhost:8080`.
+
+```bash
+cd frontend
+npm install
+npm run dev                      # http://localhost:3000
+```
+
+The browser only calls `/api/*` on the Next origin, and
+[`next.config.mjs`](frontend/next.config.mjs) proxies those calls to the Rust API
+(`API_URL`, default `http://localhost:8080`). That way the backend needs no CORS setup.
+
+| Path                                     | Role                                                  |
+| ---------------------------------------- | ----------------------------------------------------- |
+| `src/lib/api.ts`                         | Typed API client; attaches `Authorization: Bearer <JWT>` |
+| `src/lib/auth.tsx`                       | Auth context; the session lives in `sessionStorage`   |
+| `src/components/LoginForm.tsx`           | Email/password → 2FA code → JWT                       |
+| `src/components/AdminPanel.tsx`          | Create tasks, select tasks, assign them to James Bond |
+| `src/components/StaffTasks.tsx`          | `view-my-tasks` list with `cache.hit` and Refresh     |
+| `src/components/CreateTaskForm.tsx`      | Shared form; shows a clear message on a 403           |
+
+**UI walkthrough:** click *Seed Admin & James Bond users*, then sign in as
+`admin@example.com` / `AdminPass123!`. On the 2FA step, *Dev: fill code from email
+log* reads `GET /dev/email-logs/latest`. Create 5 tasks, tick 3 of them and click
+*Assign*. Sign out and sign in as `jamesbond@example.com` / `BondPass123!`. The
+staff screen lists 3 tasks with `cache.hit = false`. *Refresh* shows `true`.
+Submitting the create form as James Bond shows the 403 message.
 
 ---
 
